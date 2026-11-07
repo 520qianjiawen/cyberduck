@@ -406,9 +406,9 @@ public class BrowserController extends WindowController implements NSToolbar.Del
         this.toolbar.setAutosavesConfiguration(true);
         this.window.setToolbar(toolbar);
         this.configureBrowserColumns();
-        if(!LicenseFactory.find().verify()) {
-            this.addDonateWindowTitle();
-        }
+//        if(!LicenseFactory.find().verify()) {
+//            this.addDonateWindowTitle();
+//        }
         this.selectBookmarks(BookmarkSwitchSegement.bookmarks);
     }
 

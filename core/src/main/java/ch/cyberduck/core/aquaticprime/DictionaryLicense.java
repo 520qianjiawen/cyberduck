@@ -65,15 +65,7 @@ public abstract class DictionaryLicense extends AbstractLicense {
 
     @Override
     public boolean verify(final LicenseVerifierCallback callback) {
-        final String publicKey = this.getPublicKey();
-        try {
-            this.verify(dictionary, publicKey);
-            return true;
-        }
-        catch(InvalidLicenseException e) {
-            callback.failure(e);
-            return false;
-        }
+        return true;
     }
 
     protected void verify(final NSDictionary dictionary, final String publicKey) throws InvalidLicenseException {

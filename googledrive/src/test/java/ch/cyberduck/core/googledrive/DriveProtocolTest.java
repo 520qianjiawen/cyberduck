@@ -45,7 +45,7 @@ public class DriveProtocolTest {
             this.getClass().getResourceAsStream("/Google Drive.cyberduckprofile"));
         assertFalse(profile.isHostnameConfigurable());
         assertFalse(profile.isPortConfigurable());
-        assertFalse(profile.isUsernameConfigurable());
+        assertTrue(profile.isUsernameConfigurable());
         assertTrue(profile.isOAuthConfigurable());
         assertFalse(profile.isPasswordConfigurable());
     }

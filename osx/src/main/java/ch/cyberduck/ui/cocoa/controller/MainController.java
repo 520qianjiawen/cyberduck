@@ -39,7 +39,6 @@ import ch.cyberduck.binding.foundation.NSAppleEventDescriptor;
 import ch.cyberduck.binding.foundation.NSAppleEventManager;
 import ch.cyberduck.binding.foundation.NSArray;
 import ch.cyberduck.binding.foundation.NSAttributedString;
-import ch.cyberduck.binding.foundation.NSBundle;
 import ch.cyberduck.binding.foundation.NSDictionary;
 import ch.cyberduck.binding.foundation.NSNotification;
 import ch.cyberduck.binding.foundation.NSNotificationCenter;
@@ -107,9 +106,7 @@ import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -160,11 +157,6 @@ public class MainController extends BundleController implements NSApplication.De
         = new ArrayList<BrowserController>();
 
     private final NSWorkspace workspace = NSWorkspace.sharedWorkspace();
-
-    /**
-     * Display donation reminder dialog
-     */
-    private boolean displayDonationPrompt = true;
 
     @Outlet
     private NSMenu applicationMenu;
@@ -893,12 +885,24 @@ public class MainController extends BundleController implements NSApplication.De
         this.background(new AbstractBackgroundAction<Void>() {
             @Override
             public Void run() throws BackgroundException {
-                if(preferences.getBoolean("browser.serialize")) {
-                    sessions.load();
+                try {
+                    if(preferences.getBoolean("browser.serialize")) {
+                        try {
+                            sessions.load();
+                        } catch (Exception e) {
+                            log.error("Failure loading sessions", e);
+                        }
+                    }
+                    // Load all bookmarks in background
+                    try {
+                        bookmarks.load();
+                    }
+                    catch(Exception e) {
+                        log.error("Failure loading bookmarks", e);
+                    }
+                } finally {
+                    bookmarksSemaphore.countDown();
                 }
-                // Load all bookmarks in background
-                bookmarks.load();
-                bookmarksSemaphore.countDown();
                 return null;
             }
 
@@ -1113,51 +1117,19 @@ public class MainController extends BundleController implements NSApplication.De
                         // Review if at least one window requested to terminate later, we shall wait.
                         // This will iterate over all mounted browsers.
                         if(NSApplication.NSTerminateNow.equals(BrowserController.applicationShouldTerminate(app))) {
-                            return this.applicationShouldTerminateAfterDonationPrompt(app);
+                            return NSApplication.NSTerminateNow;
                         }
                         return NSApplication.NSTerminateLater;
                     }
                     if(choice == SheetCallback.DEFAULT_OPTION) {
                         // Quit immediatly
-                        return this.applicationShouldTerminateAfterDonationPrompt(app);
+                        return NSApplication.NSTerminateNow;
                     }
                 }
                 else {
                     browser.windowShouldClose(browser.window());
                 }
             }
-        }
-        return this.applicationShouldTerminateAfterDonationPrompt(app);
-    }
-
-    public NSUInteger applicationShouldTerminateAfterDonationPrompt(final NSApplication app) {
-        log.debug("applicationShouldTerminateAfterDonationPrompt");
-        if(!displayDonationPrompt) {
-            // Already displayed
-            return NSApplication.NSTerminateNow;
-        }
-        final License key = LicenseFactory.find();
-        if(!key.verify()) {
-            final String lastversion = preferences.getProperty("donate.reminder");
-            if(NSBundle.mainBundle().infoDictionary().objectForKey("CFBundleShortVersionString").toString().equals(lastversion)) {
-                // Do not display if same version is installed
-                return NSApplication.NSTerminateNow;
-            }
-            // Display after upgrade
-            final Calendar nextreminder = Calendar.getInstance();
-            nextreminder.setTimeInMillis(preferences.getLong("donate.reminder.date"));
-            // Display prompt every n days
-            nextreminder.add(Calendar.DAY_OF_YEAR, preferences.getInteger("donate.reminder.interval"));
-            log.debug("Next reminder {}", nextreminder.getTime().toString());
-            if(nextreminder.getTime().after(new Date(System.currentTimeMillis()))) {
-                // Do not display if shown in the reminder interval
-                return NSApplication.NSTerminateNow;
-            }
-            // Make sure prompt is not loaded twice upon next quit event
-            displayDonationPrompt = false;
-            this.alert(new DonateAlertController(app));
-            // Delay application termination. Dismissing the donation dialog will reply to quit.
-            return NSApplication.NSTerminateLater;
         }
         return NSApplication.NSTerminateNow;
     }
@@ -1189,8 +1161,6 @@ public class MainController extends BundleController implements NSApplication.De
 
     @Action
     public void applicationWillRestartAfterUpdate(ID updater) {
-        // Disable donation prompt after udpate install
-        displayDonationPrompt = false;
     }
 
     /**

@@ -48,9 +48,18 @@ public class SecurityApplicationGroupSupportDirectoryFinder implements SupportDi
             log.warn("Missing com.apple.security.application-groups in sandbox entitlements");
         }
         else {
-            // You should organize the contents of this directory in the same way that any other Library folder is organized
-            final String application = PreferencesFactory.get().getProperty("application.datafolder.name");
-            return new FinderLocal(String.format("%s/Library/Application Support", group.path()), application);
+            try {
+                // You should organize the contents of this directory in the same way that any other Library folder is organized
+                final String application = PreferencesFactory.get().getProperty("application.datafolder.name");
+                final Local dir = new FinderLocal(String.format("%s/Library/Application Support", group.path()), application);
+                if(java.nio.file.Files.isWritable(java.nio.file.Paths.get(group.path()))) {
+                    return dir;
+                }
+                log.warn("Group container {} is not writable due to sandbox/permission restrictions. Default to application support directory", group.path());
+            }
+            catch(Throwable t) {
+                log.warn("Error accessing group container: {}", t.getMessage());
+            }
         }
         log.warn("Missing support for security application groups. Default to application support directory");
         // Fallback for 10.7 and earlier

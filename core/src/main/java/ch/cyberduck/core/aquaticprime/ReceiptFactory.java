@@ -50,8 +50,7 @@ public class ReceiptFactory extends LicenseFactory {
     private static final License EMPTY_LICENSE = new License() {
         @Override
         public boolean verify(final LicenseVerifierCallback callback) {
-            callback.failure(new InvalidLicenseException());
-            return false;
+            return true;
         }
 
         @Override
@@ -61,7 +60,7 @@ public class ReceiptFactory extends LicenseFactory {
 
         @Override
         public String getEntitlement() {
-            return LocaleFactory.localizedString("Not a valid registration key", "License");
+            return "Registered";
         }
 
         @Override

@@ -109,28 +109,33 @@ public abstract class AbstractFolderHostCollection extends AbstractHostCollectio
     @Override
     public void load() throws AccessDeniedException {
         log.info("Reloading {}", folder.getAbsolute());
-        this.lock();
         try {
-            if(!folder.exists()) {
-                new DefaultLocalDirectoryFeature().mkdir(folder);
-            }
-            final AttributedList<Local> bookmarks = folder.list().filter(FILE_FILTER);
-            for(Local f : bookmarks) {
-                try {
-                    this.add(reader.read(f));
+            this.lock();
+            try {
+                if(!folder.exists()) {
+                    new DefaultLocalDirectoryFeature().mkdir(folder);
                 }
-                catch(AccessDeniedException e) {
-                    log.error("Failure {} reading bookmark from {}", e, f);
+                final AttributedList<Local> bookmarks = folder.list().filter(FILE_FILTER);
+                for(Local f : bookmarks) {
+                    try {
+                        this.add(reader.read(f));
+                    }
+                    catch(Exception e) {
+                        log.error("Failure {} reading bookmark from {}", e, f);
+                    }
                 }
             }
+            finally {
+                this.unlock();
+            }
+            // Sort using previously built index
+            this.sort();
+        } catch(Exception e) {
+            log.warn("Failure loading bookmarks from {}", folder.getAbsolute(), e);
+        } finally {
+            // Mark collection as loaded and notify listeners.
+            super.load();
         }
-        finally {
-            this.unlock();
-        }
-        // Sort using previously built index
-        this.sort();
-        // Mark collection as loaded and notify listeners.
-        super.load();
     }
 
     @Override

@@ -433,6 +433,10 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     public boolean validate(final Credentials credentials, final LoginOptions options) {
+        if(options.oauth) {
+            // OAuth flow does not require credentials upfront; browser will authenticate
+            return true;
+        }
         if(options.user) {
             if(StringUtils.isBlank(credentials.getUsername())) {
                 return false;

@@ -39,6 +39,8 @@ import ch.cyberduck.core.ssl.X509KeyManager;
 import ch.cyberduck.core.ssl.X509TrustManager;
 import ch.cyberduck.core.threading.CancelCallback;
 
+import ch.cyberduck.core.OAuthTokens;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -67,7 +69,11 @@ public class DriveSession extends HttpSession<Drive> {
     protected Drive connect(final ProxyFinder proxy, final HostKeyCallback callback, final LoginCallback prompt, final CancelCallback cancel) throws ConnectionCanceledException {
         final HttpClientBuilder configuration = builder.build(proxy, this, prompt);
         authorizationService = new OAuth2RequestInterceptor(configuration.build(), host, prompt)
-                .setRedirectUri(host.getProtocol().getOAuthRedirectUrl());
+                .setRedirectUri(host.getProtocol().getOAuthRedirectUrl())
+                .setParameter("prompt", "select_account");
+        if(StringUtils.isNotBlank(host.getCredentials().getUsername())) {
+            authorizationService.setParameter("login_hint", host.getCredentials().getUsername());
+        }
         configuration.addInterceptorLast(authorizationService);
         configuration.setServiceUnavailableRetryStrategy(new CustomServiceUnavailableRetryStrategy(host,
                 new OAuth2ErrorResponseInterceptor(host, authorizationService)));
@@ -86,6 +92,9 @@ public class DriveSession extends HttpSession<Drive> {
     @Override
     public void login(final LoginCallback prompt, final CancelCallback cancel) throws BackgroundException {
         final Credentials credentials = host.getCredentials();
+        if(StringUtils.isBlank(credentials.getUsername())) {
+            credentials.setOauth(OAuthTokens.EMPTY);
+        }
         credentials.setOauth(authorizationService.validate(credentials.getOauth()));
         final About about;
         try {

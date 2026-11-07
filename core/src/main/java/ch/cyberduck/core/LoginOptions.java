@@ -38,11 +38,11 @@ public final class LoginOptions {
     /**
      * Enable option to save password in keychain
      */
-    public boolean keychain = true;
+    public boolean keychain = false;
     /**
      * Save in keychain checked by default
      */
-    public boolean save = PreferencesFactory.get().getBoolean("connection.login.keychain");
+    public boolean save = false;
     /**
      * Enable option to select public key
      */

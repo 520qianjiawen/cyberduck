@@ -54,6 +54,11 @@ public class DriveProtocol extends AbstractProtocol {
     }
 
     @Override
+    public boolean isUsernameConfigurable() {
+        return true;
+    }
+
+    @Override
     public boolean isPasswordConfigurable() {
         // Only provide account email
         return false;
